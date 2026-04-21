@@ -81,19 +81,15 @@ const translator = createPageTranslator({
   transport,
   languages: LANGUAGES,
   // Optional: language code of your untranslated page (default: "en").
-  sourceLanguage: 'en',
-  shouldTranslateNode: node => {
-    const parent = node.parentElement
-    if (!parent) return false
-    if (parent.closest('[translate="no"], [data-no-translate]')) return false
-    return true
-  }
+  sourceLanguage: 'en'
 })
 
 document.querySelector('#language').addEventListener('change', event => {
   translator.setLanguage(event.target.value)
 })
 ```
+
+By default, the client skips text nodes and translatable attributes under an ancestor with `translate="no"` or class `notranslate`, matching [Google Cloud Translation HTML guidance](https://docs.cloud.google.com/translate/troubleshooting). Use `shouldTranslateNode` or `shouldTranslateAttribute` only when you need extra filters beyond that.
 
 ## Testing
 

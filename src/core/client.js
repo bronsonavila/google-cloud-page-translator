@@ -4,6 +4,10 @@ function hasTranslatableContent(text) {
   return /[\p{L}\p{N}]/u.test(text || '')
 }
 
+function isInsideNoTranslate(element) {
+  return Boolean(element.closest('[translate="no"], .notranslate'))
+}
+
 function chunkArray(array, size) {
   const chunks = []
 
@@ -131,6 +135,8 @@ function getTextNodes(root, shouldTranslateNode) {
         return NodeFilter.FILTER_REJECT
       }
 
+      if (isInsideNoTranslate(parent)) return NodeFilter.FILTER_REJECT
+
       if (typeof shouldTranslateNode === 'function') {
         return shouldTranslateNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
       }
@@ -152,6 +158,8 @@ function getPlaceholderElements(root, shouldTranslateAttribute) {
 
     if (!hasTranslatableContent(value)) return false
 
+    if (isInsideNoTranslate(element)) return false
+
     if (typeof shouldTranslateAttribute !== 'function') return true
 
     return shouldTranslateAttribute(element, 'placeholder')
@@ -168,6 +176,8 @@ function getValueElements(root, shouldTranslateAttribute) {
 
     if (!hasTranslatableContent(value)) return false
 
+    if (isInsideNoTranslate(element)) return false
+
     if (typeof shouldTranslateAttribute !== 'function') return true
 
     return shouldTranslateAttribute(element, 'value')
@@ -177,6 +187,9 @@ function getValueElements(root, shouldTranslateAttribute) {
 /**
  * Create a headless page translator that snapshots text nodes and selected attributes,
  * batches strings through your transport, caches results, and optionally observes DOM mutations.
+ *
+ * By default, text nodes and translatable attributes under an ancestor with `translate="no"` or
+ * class `notranslate` are skipped, matching Google Cloud Translation HTML guidance.
  *
  * @param {object} [options]
  * @param {ParentNode} [options.root] Root subtree to translate (default: `document.body` when `document` exists).

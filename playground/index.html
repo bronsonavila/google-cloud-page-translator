@@ -135,7 +135,7 @@
     <h2>Checklist</h2>
 
     <ul>
-      <li>Select Spanish and watch this list and the paragraphs update.</li>
+      <li>Select a target language and watch this list and the paragraphs update.</li>
       <li>Switch back to English and confirm text returns without a long delay (warm cache).</li>
       <li>Open the browser developer tools Network tab alongside the log panel below.</li>
     </ul>
@@ -143,6 +143,52 @@
     <h2>Closing note</h2>
 
     <p>Thank you for trying the component in a real browser tab.</p>
+
+    <h2>No-translate zones</h2>
+
+    <p>
+      After you pick a target language, the English-only blocks below must stay English. The short
+      paragraph after each test case should follow the selected language.
+    </p>
+
+    <h3 translate="no"><code>translate="no"</code> (paragraph)</h3>
+
+    <p translate="no">
+      This paragraph uses <code>translate="no"</code>. It should stay English no matter which
+      target language you pick.
+    </p>
+
+    <p>This paragraph should follow the selected language.</p>
+
+    <h3 translate="no"><code>class="notranslate"</code> (paragraph)</h3>
+
+    <p class="notranslate">
+      This paragraph uses <code>class="notranslate"</code>. It should stay English no matter which
+      target language you pick.
+    </p>
+
+    <p>This paragraph should also follow the selected language.</p>
+
+    <h3 translate="no"><code>translate="no"</code> (form controls)</h3>
+
+    <div translate="no">
+      <p>
+        Inside this box, placeholder and button label should stay in English. The wrapping sentence
+        is part of the no-translate subtree, so it stays English too.
+      </p>
+
+      <p>
+        <label for="playground-ph">Search</label>
+
+        <input id="playground-ph" type="text" placeholder="Type a product name" />
+      </p>
+
+      <p>
+        <input type="submit" value="Submit order" />
+      </p>
+    </div>
+
+    <p>This line sits outside the box and should translate.</p>
   </main>
 
   <section class="log-wrap" aria-label="Fetch log">
