@@ -39,6 +39,130 @@ function isObject(value) {
   return Boolean(value) && typeof value === 'object'
 }
 
+const INLINE_ELEMENT_TAG_NAMES = new Set([
+  'A',
+  'ABBR',
+  'B',
+  'BDI',
+  'BDO',
+  'BR',
+  'CITE',
+  'CODE',
+  'DFN',
+  'EM',
+  'I',
+  'KBD',
+  'MARK',
+  'Q',
+  'RP',
+  'RT',
+  'RUBY',
+  'S',
+  'SAMP',
+  'SMALL',
+  'SPAN',
+  'STRONG',
+  'SUB',
+  'SUP',
+  'TIME',
+  'U',
+  'VAR',
+  'WBR'
+])
+
+function getLangTarget(root) {
+  if (!root) return null
+
+  if (root.nodeType === Node.DOCUMENT_NODE) {
+    return root.documentElement || null
+  }
+
+  return root.nodeType === Node.ELEMENT_NODE ? root : null
+}
+
+function restoreLangAttribute(target, original) {
+  if (!target) return
+
+  if (original.hadAttribute) {
+    target.setAttribute('lang', original.value)
+
+    return
+  }
+
+  target.removeAttribute('lang')
+}
+
+function isRichTextCovered(node, richTextElements) {
+  if (!richTextElements?.size) return false
+
+  let current = node
+
+  while (current) {
+    if (richTextElements.has(current)) return true
+    current = current.parentElement
+  }
+
+  return false
+}
+
+function getElementCandidates(root) {
+  const descendants = Array.from(root.querySelectorAll('*'))
+
+  if (root.nodeType === Node.ELEMENT_NODE) {
+    return [root, ...descendants]
+  }
+
+  return descendants
+}
+
+function hasRichTextDirectTextChild(element) {
+  return Array.from(element.childNodes).some(node => {
+    return (
+      node.nodeType === Node.TEXT_NODE &&
+      typeof node.nodeValue === 'string' &&
+      node.nodeValue.trim() &&
+      hasTranslatableContent(node.nodeValue)
+    )
+  })
+}
+
+function hasInlineElementChild(element) {
+  return Array.from(element.children).some(child => INLINE_ELEMENT_TAG_NAMES.has(child.tagName))
+}
+
+function getRichTextElements(root, shouldTranslateNode) {
+  return getElementCandidates(root).filter(element => {
+    if (INLINE_ELEMENT_TAG_NAMES.has(element.tagName)) return false
+
+    if (element.closest('script, style, noscript')) return false
+
+    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'OPTION'].includes(element.tagName)) {
+      return false
+    }
+
+    if (isInsideNoTranslate(element)) return false
+
+    if (element.querySelector('[translate="no"], .notranslate')) return false
+
+    if (!hasInlineElementChild(element) || !hasRichTextDirectTextChild(element)) return false
+
+    const textNodes = Array.from(element.childNodes).filter(node => {
+      return (
+        node.nodeType === Node.TEXT_NODE &&
+        typeof node.nodeValue === 'string' &&
+        node.nodeValue.trim() &&
+        hasTranslatableContent(node.nodeValue)
+      )
+    })
+
+    if (typeof shouldTranslateNode === 'function' && textNodes.some(node => !shouldTranslateNode(node))) {
+      return false
+    }
+
+    return true
+  })
+}
+
 // --- Storage cache
 
 function isStorageLike(storage) {
@@ -133,7 +257,7 @@ function saveStringMap({ storage, storagePrefix, language, cacheVersion, map }) 
 
 // --- DOM scraping
 
-function getTextNodes(root, shouldTranslateNode) {
+function getTextNodes(root, shouldTranslateNode, richTextElements) {
   const nodes = []
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
@@ -153,6 +277,8 @@ function getTextNodes(root, shouldTranslateNode) {
       }
 
       if (isInsideNoTranslate(parent)) return NodeFilter.FILTER_REJECT
+
+      if (isRichTextCovered(parent, richTextElements)) return NodeFilter.FILTER_REJECT
 
       if (typeof shouldTranslateNode === 'function') {
         return shouldTranslateNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
@@ -210,7 +336,7 @@ function getValueElements(root, shouldTranslateAttribute) {
  *
  * @param {object} [options]
  * @param {ParentNode} [options.root] Root subtree to translate (default: `document.body` when `document` exists).
- * @param {(texts: string[], targetLanguage: string) => Promise<string[]>} options.transport Required batch translator; must return an array of the same length as `texts`.
+ * @param {(texts: string[], targetLanguage: string, options?: { format?: 'text' | 'html' }) => Promise<string[]>} options.transport Required batch translator; must return an array of the same length as `texts`.
  * @param {Storage | null} [options.storage] Persistence for per-language string maps and the preferred language (default: `localStorage` in browsers when available).
  * @param {{ value: string, label?: string }[]} [options.languages] When set, `setLanguage` ignores unknown codes.
  * @param {(node: Text) => boolean} [options.shouldTranslateNode] Filter for text nodes discovered under `root`.
@@ -221,6 +347,8 @@ function getValueElements(root, shouldTranslateAttribute) {
  * @param {string} [options.preferenceKey] Key for persisting the selected language (default: `preferredLanguage`).
  * @param {number} [options.observerDebounceMs] Debounce for mutation-driven re-translation (default: 300).
  * @param {string} [options.sourceLanguage] Language code for the original page content (default: `en`); selecting this restores originals.
+ * @param {boolean} [options.markTranslations] When true (default), apply Google machine-translation `lang` markup to the translation root.
+ * @param {boolean} [options.translateHTML] When true, translate eligible rich-text containers as HTML instead of splitting their text nodes.
  * @param {number} [options.cacheVersion] Bump to invalidate cached maps for all languages (default: 1).
  * @param {number} [options.cacheExpirationMs] Time-to-live for cached maps (default: 30 days).
  * @returns {{
@@ -245,6 +373,8 @@ export function createPageTranslator(options) {
     observerDebounceMs = 300,
     // Language code for the untranslated page content. Switching back to this restores originals.
     sourceLanguage = 'en',
+    markTranslations = true,
+    translateHTML = false,
     // Bump cacheVersion to immediately invalidate all cached translations for all users.
     cacheVersion = 1,
     cacheExpirationMs = 30 * 24 * 60 * 60 * 1000
@@ -257,8 +387,18 @@ export function createPageTranslator(options) {
   // WeakMaps let us keep original values without mutating DOM nodes or leaking memory.
   const originals = {
     text: new WeakMap(),
+    html: new WeakMap(),
     placeholder: new WeakMap(),
     value: new WeakMap()
+  }
+  // Rich-text containers have their innerHTML replaced on translation, so a fresh snapshot
+  // can no longer classify them as rich-text. Track every element whose original HTML we
+  // captured so restoreOriginals can reach them regardless of current DOM shape.
+  const trackedRichTextElements = new Set()
+  const langTarget = getLangTarget(root)
+  const originalLang = {
+    hadAttribute: langTarget?.hasAttribute('lang') || false,
+    value: langTarget?.getAttribute('lang') || ''
   }
 
   let currentLanguage = sourceLanguage
@@ -293,6 +433,12 @@ export function createPageTranslator(options) {
 
   function initializeOriginals(snapshot) {
     // Capture originals once so every language switch always starts from the same source text.
+    snapshot.richTextElements.forEach(element => {
+      if (!originals.html.has(element)) originals.html.set(element, element.innerHTML)
+
+      trackedRichTextElements.add(element)
+    })
+
     snapshot.textNodes.forEach(node => {
       if (!originals.text.has(node)) originals.text.set(node, node.nodeValue)
     })
@@ -308,8 +454,11 @@ export function createPageTranslator(options) {
   }
 
   function getSnapshot() {
+    const richTextElements = translateHTML ? getRichTextElements(root, shouldTranslateNode) : []
+    const richTextElementSet = richTextElements.length > 0 ? new Set(richTextElements) : null
     const snapshot = {
-      textNodes: getTextNodes(root, shouldTranslateNode),
+      richTextElements,
+      textNodes: getTextNodes(root, shouldTranslateNode, richTextElementSet),
       placeholderElements: getPlaceholderElements(root, shouldTranslateAttribute),
       valueElements: getValueElements(root, shouldTranslateAttribute)
     }
@@ -320,6 +469,15 @@ export function createPageTranslator(options) {
   }
 
   function restoreOriginalsFromSnapshot(snapshot) {
+    // Iterate tracked elements rather than the snapshot: once we replace innerHTML with a
+    // translation, the container no longer matches getRichTextElements, so a fresh snapshot
+    // would miss it and leave the translated markup in place.
+    trackedRichTextElements.forEach(element => {
+      const value = originals.html.get(element)
+
+      if (typeof value === 'string') element.innerHTML = value
+    })
+
     snapshot.textNodes.forEach(node => {
       const value = originals.text.get(node)
 
@@ -342,20 +500,33 @@ export function createPageTranslator(options) {
   function buildTranslationQueue(snapshot) {
     // Flatten all translatable targets into one ordered queue for positional mapping.
     return [
+      ...snapshot.richTextElements.map(element => ({
+        type: 'html',
+        target: element,
+        original: originals.html.get(element) || '',
+        cacheKey: `html:${originals.html.get(element) || ''}`,
+        format: 'html'
+      })),
       ...snapshot.textNodes.map(node => ({
         type: 'textNode',
         target: node,
-        original: originals.text.get(node) || ''
+        original: originals.text.get(node) || '',
+        cacheKey: `text:${originals.text.get(node) || ''}`,
+        format: 'text'
       })),
       ...snapshot.placeholderElements.map(element => ({
         type: 'placeholder',
         target: element,
-        original: originals.placeholder.get(element) || ''
+        original: originals.placeholder.get(element) || '',
+        cacheKey: `text:${originals.placeholder.get(element) || ''}`,
+        format: 'text'
       })),
       ...snapshot.valueElements.map(element => ({
         type: 'value',
         target: element,
-        original: originals.value.get(element) || ''
+        original: originals.value.get(element) || '',
+        cacheKey: `text:${originals.value.get(element) || ''}`,
+        format: 'text'
       }))
     ]
   }
@@ -364,6 +535,12 @@ export function createPageTranslator(options) {
     queue.forEach((item, index) => {
       const translatedText = translatedTexts[index]
       if (typeof translatedText !== 'string') return
+
+      if (item.type === 'html') {
+        item.target.innerHTML = translatedText
+
+        return
+      }
 
       if (item.type === 'textNode') {
         item.target.nodeValue = preserveWhitespace(item.original, translatedText)
@@ -381,22 +558,64 @@ export function createPageTranslator(options) {
     })
   }
 
-  async function translateMisses(uniqueMisses, targetLanguage) {
+  async function translateMissGroup(uniqueMisses, targetLanguage, options) {
     const chunks = chunkArray(uniqueMisses, chunkSize)
-    const results = []
+    const results = new Map()
 
     for (const chunk of chunks) {
       // Chunk requests to stay under service limits and reduce payload size.
-      const translated = await transport(chunk, targetLanguage)
+      const translated = await transport(
+        chunk.map(item => item.original),
+        targetLanguage,
+        options
+      )
 
       if (!Array.isArray(translated) || translated.length !== chunk.length) {
         throw new Error('transport must return an array of translated strings matching input length')
       }
 
-      results.push(...translated)
+      chunk.forEach((item, index) => {
+        results.set(item.cacheKey, translated[index])
+      })
     }
 
     return results
+  }
+
+  async function translateMisses(uniqueMisses, targetLanguage) {
+    const textMisses = uniqueMisses.filter(item => item.format === 'text')
+    const htmlMisses = uniqueMisses.filter(item => item.format === 'html')
+    const results = new Map()
+
+    if (textMisses.length > 0) {
+      const translatedText = await translateMissGroup(textMisses, targetLanguage, { format: 'text' })
+
+      translatedText.forEach((value, key) => {
+        results.set(key, value)
+      })
+    }
+
+    if (htmlMisses.length > 0) {
+      const translatedHTML = await translateMissGroup(htmlMisses, targetLanguage, { format: 'html' })
+
+      translatedHTML.forEach((value, key) => {
+        results.set(key, value)
+      })
+    }
+
+    return results
+  }
+
+  function applyTranslationMarkup(targetLanguage) {
+    if (!markTranslations || !langTarget) return
+
+    langTarget.setAttribute('lang', `${targetLanguage}-x-mtfrom-${sourceLanguage}`)
+  }
+
+  function restoreTranslationMarkup() {
+    if (!markTranslations || !langTarget) return
+
+    restoreLangAttribute(langTarget, originalLang)
   }
 
   async function applyLanguage(targetLanguage) {
@@ -407,6 +626,7 @@ export function createPageTranslator(options) {
       ignoreMutationsUntil = Date.now() + 500
 
       restoreOriginalsFromSnapshot(snapshot)
+      restoreTranslationMarkup()
 
       return
     }
@@ -421,7 +641,15 @@ export function createPageTranslator(options) {
       cacheExpirationMs
     })
 
-    const uniqueMisses = [...new Set(queue.map(item => item.original).filter(text => !(text in stringMap)))]
+    const uniqueMisses = []
+    const seenMisses = new Set()
+
+    queue.forEach(item => {
+      if (item.cacheKey in stringMap || seenMisses.has(item.cacheKey)) return
+
+      seenMisses.add(item.cacheKey)
+      uniqueMisses.push(item)
+    })
 
     if (uniqueMisses.length > 0) {
       const translated = await translateMisses(uniqueMisses, targetLanguage)
@@ -429,8 +657,10 @@ export function createPageTranslator(options) {
       // Another language selection happened while awaiting transport results.
       if (requestId !== applyRequestId) return
 
-      uniqueMisses.forEach((text, index) => {
-        stringMap[text] = translated[index]
+      uniqueMisses.forEach(item => {
+        if (!translated.has(item.cacheKey)) return
+
+        stringMap[item.cacheKey] = translated.get(item.cacheKey)
       })
 
       saveStringMap({
@@ -448,8 +678,9 @@ export function createPageTranslator(options) {
 
     applyTranslatedQueue(
       queue,
-      queue.map(item => stringMap[item.original] ?? item.original)
+      queue.map(item => stringMap[item.cacheKey] ?? item.original)
     )
+    applyTranslationMarkup(targetLanguage)
   }
 
   async function setLanguage(language) {
@@ -482,6 +713,7 @@ export function createPageTranslator(options) {
     setStoredLanguage(sourceLanguage)
 
     restoreOriginalsFromSnapshot(getSnapshot())
+    restoreTranslationMarkup()
   }
 
   function destroy() {

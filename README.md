@@ -34,6 +34,8 @@ el.languages = [
 ]
 // Optional: language code of your untranslated page (default: "en").
 el.sourceLanguage = 'en'
+// Optional: translate eligible rich text blocks as HTML (default: false).
+el.translateHTML = true
 ```
 
 The element is themed via CSS custom properties:
@@ -63,11 +65,15 @@ const LANGUAGES = [
 // Use the HTTPS trigger URL returned by `gcloud functions deploy`.
 const endpoint = '<YOUR_TRANSLATE_FUNCTION_URL>'
 
-const transport = async (texts, targetLanguage) => {
+const transport = async (texts, targetLanguage, options) => {
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ texts, targetLanguage, format: 'text' })
+    body: JSON.stringify({
+      texts,
+      targetLanguage,
+      format: options?.format || 'text'
+    })
   })
 
   if (!response.ok) throw new Error(`Translation request failed: ${response.status}`)
@@ -81,7 +87,11 @@ const translator = createPageTranslator({
   transport,
   languages: LANGUAGES,
   // Optional: language code of your untranslated page (default: "en").
-  sourceLanguage: 'en'
+  sourceLanguage: 'en',
+  // Optional: adds lang="<target>-x-mtfrom-<source>" to the translation root (default: true).
+  markTranslations: true,
+  // Optional: send eligible rich-text containers as HTML instead of split plain text fragments (default: false).
+  translateHTML: true
 })
 
 document.querySelector('#language').addEventListener('change', event => {
@@ -90,6 +100,10 @@ document.querySelector('#language').addEventListener('change', event => {
 ```
 
 By default, the client skips text nodes and translatable attributes under an ancestor with `translate="no"` or class `notranslate`, matching [Google Cloud Translation HTML guidance](https://docs.cloud.google.com/translate/troubleshooting). Use `shouldTranslateNode` or `shouldTranslateAttribute` only when you need extra filters beyond that.
+
+When `markTranslations` is enabled (default), the client sets machine-translation markup on the translation root using the `lang` format `<target>-x-mtfrom-<source>`, as described in Google Cloud [Translation API Markup](https://docs.cloud.google.com/translate/markup). The original `lang` value is restored when returning to the source language.
+
+When `translateHTML` is enabled (default is `false`), eligible rich-text containers with inline tags are translated as HTML in one request. The client sends `format: "html"` for those chunks and keeps plain text for other content such as standalone text nodes and form attributes.
 
 ## Testing
 

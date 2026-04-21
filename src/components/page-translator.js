@@ -36,12 +36,12 @@ function parseLanguages(value) {
 /**
  * Drop-in `<page-translator>` UI: shadow DOM language selector wired to {@link createPageTranslator}.
  *
- * Attributes: `endpoint` (POST URL), `languages` (JSON array of `{ value, label }`), optional `label`, optional `source-language`.
- * Properties: `endpoint`, `languages`, `root` (translation root, default `document.body`), `sourceLanguage`.
+ * Attributes: `endpoint` (POST URL), `languages` (JSON array of `{ value, label }`), optional `label`, optional `source-language`, optional `translate-html`.
+ * Properties: `endpoint`, `languages`, `root` (translation root, default `document.body`), `sourceLanguage`, `translateHTML`.
  */
 export class PageTranslatorElement extends HTMLElement {
   static get observedAttributes() {
-    return ['endpoint', 'label', 'languages', 'source-language']
+    return ['endpoint', 'label', 'languages', 'source-language', 'translate-html']
   }
 
   #translator = null
@@ -50,6 +50,7 @@ export class PageTranslatorElement extends HTMLElement {
   #languages = null
   #label = DEFAULT_LABEL
   #sourceLanguage = null
+  #translateHTML = false
   #selectChangeAbort = null
 
   constructor() {
@@ -66,6 +67,8 @@ export class PageTranslatorElement extends HTMLElement {
     if (this.#sourceLanguage == null) {
       this.#sourceLanguage = asString(this.getAttribute('source-language')) || 'en'
     }
+
+    this.#translateHTML = this.#translateHTML || this.hasAttribute('translate-html')
 
     this.#render()
     this.#ensureTranslator()
@@ -111,6 +114,14 @@ export class PageTranslatorElement extends HTMLElement {
       this.#sourceLanguage = asString(newValue) || 'en'
 
       this.#restartTranslator()
+
+      return
+    }
+
+    if (name === 'translate-html') {
+      this.#translateHTML = newValue !== null
+
+      this.#restartTranslator()
     }
   }
 
@@ -154,6 +165,16 @@ export class PageTranslatorElement extends HTMLElement {
     this.setAttribute('source-language', next)
   }
 
+  get translateHTML() {
+    return this.#translateHTML
+  }
+
+  set translateHTML(value) {
+    this.#translateHTML = Boolean(value)
+
+    this.toggleAttribute('translate-html', this.#translateHTML)
+  }
+
   #restartTranslator() {
     this.#translator?.destroy()
     this.#translator = null
@@ -179,11 +200,11 @@ export class PageTranslatorElement extends HTMLElement {
     if (!this.#endpoint) return
 
     // Default transport contract expected by createPageTranslator.
-    const transport = async (texts, targetLanguage) => {
+    const transport = async (texts, targetLanguage, options) => {
       const response = await fetch(this.#endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texts, targetLanguage, format: 'text' })
+        body: JSON.stringify({ texts, targetLanguage, format: options?.format || 'text' })
       })
 
       if (!response.ok) {
@@ -199,7 +220,8 @@ export class PageTranslatorElement extends HTMLElement {
       root: this.#root,
       transport,
       languages: this.#languages,
-      sourceLanguage: this.sourceLanguage
+      sourceLanguage: this.sourceLanguage,
+      translateHTML: this.#translateHTML
     })
 
     const select = this.#getSelect()

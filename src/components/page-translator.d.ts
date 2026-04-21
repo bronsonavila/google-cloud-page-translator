@@ -6,4 +6,5 @@ export class PageTranslatorElement extends HTMLElement {
   /** Root element to translate (default: `document.body`). */
   root: Element | Document
   sourceLanguage: string
+  translateHTML: boolean
 }

@@ -79,6 +79,76 @@ describe('PageTranslatorElement listener wiring (browser)', () => {
       content.remove()
     }
   })
+
+  it('forwards html format when translateHTML is enabled', async () => {
+    const mockPath = '/__page_translator_html_test__'
+    const mockEndpoint = `${window.location.origin}${mockPath}`
+    const requestBodies = []
+
+    const originalFetch = globalThis.fetch.bind(globalThis)
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = typeof input === 'string' ? input : input.url
+
+      if (url !== mockEndpoint) return originalFetch(input, init)
+
+      const parsed = JSON.parse(String(init?.body || '{}'))
+      const texts = Array.isArray(parsed.texts) ? parsed.texts : []
+
+      requestBodies.push(parsed)
+
+      return Response.json({
+        translatedTexts:
+          parsed.format === 'html'
+            ? texts.map(text => `<span data-rich-translation="yes">${text}</span>`)
+            : texts.map(text => `(${text})`)
+      })
+    })
+
+    const content = document.createElement('div')
+
+    content.innerHTML = '<p data-rich>Try <strong>Tagalog</strong> next</p>'
+
+    document.body.appendChild(content)
+
+    const element = document.createElement('page-translator')
+
+    document.body.appendChild(element)
+
+    try {
+      element.endpoint = mockEndpoint
+      element.languages = languages
+      element.sourceLanguage = 'en'
+      element.translateHTML = true
+      element.root = content
+
+      const select = element.shadowRoot?.querySelector('select')
+
+      expect(select).toBeTruthy()
+
+      select.value = 'es'
+      select.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
+
+      await vi.waitFor(
+        () => {
+          expect(content.querySelector('[data-rich]')?.innerHTML).toContain('data-rich-translation="yes"')
+        },
+        { timeout: 5000, interval: 50 }
+      )
+
+      expect(requestBodies).toEqual([
+        {
+          texts: ['Try <strong>Tagalog</strong> next'],
+          targetLanguage: 'es',
+          format: 'html'
+        }
+      ])
+    } finally {
+      fetchSpy.mockRestore()
+      element.remove()
+      content.remove()
+    }
+  })
 })
 
 describeIntegration('PageTranslatorElement against Cloud Run (integration, browser)', () => {
