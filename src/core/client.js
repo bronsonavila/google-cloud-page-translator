@@ -8,6 +8,23 @@ function isInsideNoTranslate(element) {
   return Boolean(element.closest('[translate="no"], .notranslate'))
 }
 
+function preserveWhitespace(original, translated) {
+  let result = translated
+
+  const leadingWhitespace = original.match(/^\s+/)?.[0] || ''
+  const trailingWhitespace = original.match(/\s+$/)?.[0] || ''
+
+  if (leadingWhitespace) {
+    result = leadingWhitespace + result.replace(/^\s+/, '')
+  }
+
+  if (trailingWhitespace) {
+    result = result.replace(/\s+$/, '') + trailingWhitespace
+  }
+
+  return result
+}
+
 function chunkArray(array, size) {
   const chunks = []
 
@@ -349,7 +366,7 @@ export function createPageTranslator(options) {
       if (typeof translatedText !== 'string') return
 
       if (item.type === 'textNode') {
-        item.target.nodeValue = translatedText
+        item.target.nodeValue = preserveWhitespace(item.original, translatedText)
 
         return
       }
