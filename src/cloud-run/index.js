@@ -3,7 +3,8 @@ const translate = new Translate()
 
 const BAN_THRESHOLD = 200
 const BAN_WINDOW_MS = 5 * 60_000
-const MAX_STRING_LENGTH = 5_000
+const MAX_TEXT_STRING_LENGTH = 5_000
+const MAX_HTML_STRING_LENGTH = 10_000
 const MAX_STRINGS_PER_BATCH = 128
 const RATE_LIMIT_RPM = 60
 const RATE_LIMIT_WINDOW_MS = 60_000
@@ -135,11 +136,12 @@ exports.translatePage = async (request, response) => {
     return
   }
 
-  const hasInvalidItem = texts.some(item => typeof item !== 'string' || item.length > MAX_STRING_LENGTH)
+  const maxLength = format === 'html' ? MAX_HTML_STRING_LENGTH : MAX_TEXT_STRING_LENGTH
+  const hasInvalidItem = texts.some(item => typeof item !== 'string' || item.length > maxLength)
 
   if (hasInvalidItem) {
     response.status(400).json({
-      error: `Each item in texts must be a string of at most ${MAX_STRING_LENGTH} characters`
+      error: `Each item in texts must be a string of at most ${maxLength} characters`
     })
 
     return
