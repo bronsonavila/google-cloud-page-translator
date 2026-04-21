@@ -107,7 +107,7 @@ describe('PageTranslatorElement listener wiring (browser)', () => {
 
     const content = document.createElement('div')
 
-    content.innerHTML = '<p data-rich>Try <strong>Tagalog</strong> next</p>'
+    content.innerHTML = '<p data-rich>Try <strong>Japanese</strong> next</p>'
 
     document.body.appendChild(content)
 
@@ -137,7 +137,7 @@ describe('PageTranslatorElement listener wiring (browser)', () => {
 
       expect(requestBodies).toEqual([
         {
-          texts: ['Try <strong>Tagalog</strong> next'],
+          texts: ['Try <strong>Japanese</strong> next'],
           targetLanguage: 'es',
           format: 'html'
         }

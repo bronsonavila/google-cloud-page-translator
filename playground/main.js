@@ -5,7 +5,7 @@ const endpoint = import.meta.env.VITE_TRANSLATE_ENDPOINT
 const languages = [
   { value: 'en', label: 'English' },
   { value: 'es', label: 'Español' },
-  { value: 'tl', label: 'Tagalog' }
+  { value: 'ja', label: 'Japanese' }
 ]
 
 const logEl = document.querySelector('[data-log]')

@@ -26,13 +26,13 @@ describe('createPageTranslator whitespace preservation (browser)', () => {
     const root = document.createElement('div')
     const transport = createWhitespaceStrippingTransport()
 
-    root.innerHTML = '<p>Try <strong>Tagalog</strong> or <strong>Spanish</strong> next</p>'
+    root.innerHTML = '<p>Try <strong>Japanese</strong> or <strong>Spanish</strong> next</p>'
 
     const translator = createTranslator(root, transport)
 
     await translator.setLanguage('es')
 
-    expect(root.textContent).toBe('TRY TAGALOG OR SPANISH NEXT')
+    expect(root.textContent).toBe('TRY JAPANESE OR SPANISH NEXT')
 
     translator.destroy()
   })
@@ -86,7 +86,7 @@ describe('createPageTranslator whitespace preservation (browser)', () => {
     const root = document.createElement('div')
     const transport = createWhitespaceStrippingTransport()
 
-    root.innerHTML = '<p>Try <strong>Tagalog</strong> or <a href="#">Spanish</a> next</p>'
+    root.innerHTML = '<p>Try <strong>Japanese</strong> or <a href="#">Spanish</a> next</p>'
 
     const translator = createTranslator(root, transport)
 
@@ -97,7 +97,7 @@ describe('createPageTranslator whitespace preservation (browser)', () => {
     await translator.setLanguage('es')
 
     expect(root.innerHTML).toBe(firstPass)
-    expect(root.textContent).toBe('TRY TAGALOG OR SPANISH NEXT')
+    expect(root.textContent).toBe('TRY JAPANESE OR SPANISH NEXT')
 
     translator.destroy()
   })

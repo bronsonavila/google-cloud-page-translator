@@ -29,7 +29,7 @@ describe('createPageTranslator HTML translation (browser)', () => {
     const received = []
     const transport = createTransport(received)
 
-    root.innerHTML = '<p data-rich>Try <strong>Tagalog</strong> next</p>'
+    root.innerHTML = '<p data-rich>Try <strong>Japanese</strong> next</p>'
 
     const translator = createPageTranslator({
       root,
@@ -45,7 +45,7 @@ describe('createPageTranslator HTML translation (browser)', () => {
     const htmlCalls = received.filter(call => call.format === 'html')
 
     expect(htmlCalls.length).toBe(1)
-    expect(htmlCalls[0].texts).toEqual(['Try <strong>Tagalog</strong> next'])
+    expect(htmlCalls[0].texts).toEqual(['Try <strong>Japanese</strong> next'])
 
     translator.destroy()
   })
@@ -56,7 +56,7 @@ describe('createPageTranslator HTML translation (browser)', () => {
     const transport = createTransport(received)
 
     root.innerHTML = `
-      <p data-rich>Try <strong>Tagalog</strong> or <a href="#">Spanish</a> next</p>
+      <p data-rich>Try <strong>Japanese</strong> or <a href="#">Spanish</a> next</p>
       <p data-plain>Plain line</p>
       <input type="text" placeholder="Type name" />
       <input type="submit" value="Submit order" />
@@ -81,7 +81,7 @@ describe('createPageTranslator HTML translation (browser)', () => {
       },
       {
         format: 'html',
-        texts: ['Try <strong>Tagalog</strong> or <a href="#">Spanish</a> next']
+        texts: ['Try <strong>Japanese</strong> or <a href="#">Spanish</a> next']
       }
     ])
 
@@ -89,7 +89,7 @@ describe('createPageTranslator HTML translation (browser)', () => {
     expect(received.flatMap(call => call.texts)).not.toContain('Spanish')
 
     expect(root.querySelector('[data-rich]').innerHTML).toBe(
-      '<span data-rich-translation="yes">Try <strong>Tagalog</strong> or <a href="#">Spanish</a> next</span>'
+      '<span data-rich-translation="yes">Try <strong>Japanese</strong> or <a href="#">Spanish</a> next</span>'
     )
     expect(root.querySelector('[data-plain]').textContent).toBe('(Plain line)')
     expect(root.querySelector('input[type="text"]').getAttribute('placeholder')).toBe('(Type name)')
@@ -98,7 +98,7 @@ describe('createPageTranslator HTML translation (browser)', () => {
     translator.restoreOriginals()
 
     expect(root.querySelector('[data-rich]').innerHTML).toBe(
-      'Try <strong>Tagalog</strong> or <a href="#">Spanish</a> next'
+      'Try <strong>Japanese</strong> or <a href="#">Spanish</a> next'
     )
     expect(root.querySelector('[data-plain]').textContent).toBe('Plain line')
     expect(root.querySelector('input[type="text"]').getAttribute('placeholder')).toBe('Type name')

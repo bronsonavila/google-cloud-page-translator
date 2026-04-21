@@ -30,7 +30,7 @@ el.endpoint = '<YOUR_TRANSLATE_FUNCTION_URL>'
 el.languages = [
   { value: 'en', label: 'English' },
   { value: 'es', label: 'Español' },
-  { value: 'tl', label: 'Tagalog' }
+  { value: 'ja', label: 'Japanese' }
 ]
 // Optional: language code of your untranslated page (default: "en").
 el.sourceLanguage = 'en'
@@ -58,7 +58,7 @@ import { createPageTranslator } from 'google-cloud-page-translator'
 const LANGUAGES = [
   { value: 'en', label: 'English' },
   { value: 'es', label: 'Español' },
-  { value: 'tl', label: 'Tagalog' }
+  { value: 'ja', label: 'Japanese' }
 ]
 
 // Use the HTTPS trigger URL returned by `gcloud functions deploy`.
