@@ -58,7 +58,6 @@ if (!endpoint) {
 
 translator.languages = languages
 translator.sourceLanguage = 'en'
-translator.translateHTML = true
 translator.root = pageRoot
 
 appendLog('Playground ready. Change the language in the control to translate the main panel.')

@@ -34,8 +34,7 @@ el.languages = [
 ]
 // Optional: language code of your untranslated page (default: "en").
 el.sourceLanguage = 'en'
-// Optional: translate eligible rich text blocks as HTML (default: false).
-el.translateHTML = true
+// Optional: set el.translateHTML = false to translate only plain text fragments (default: true).
 ```
 
 The element is themed via CSS custom properties:
@@ -89,9 +88,7 @@ const translator = createPageTranslator({
   // Optional: language code of your untranslated page (default: "en").
   sourceLanguage: 'en',
   // Optional: adds lang="<target>-x-mtfrom-<source>" to the translation root (default: true).
-  markTranslations: true,
-  // Optional: send eligible rich-text containers as HTML instead of split plain text fragments (default: false).
-  translateHTML: true
+  markTranslations: true
 })
 
 document.querySelector('#language').addEventListener('change', event => {
@@ -103,7 +100,7 @@ By default, the client skips text nodes and translatable attributes under an anc
 
 When `markTranslations` is enabled (default), the client sets machine-translation markup on the translation root using the `lang` format `<target>-x-mtfrom-<source>`, as described in Google Cloud [Translation API Markup](https://docs.cloud.google.com/translate/markup). The original `lang` value is restored when returning to the source language.
 
-When `translateHTML` is enabled (default is `false`), eligible rich-text containers with inline tags are translated as HTML in one request. The client sends `format: "html"` for those chunks and keeps plain text for other content such as standalone text nodes and form attributes.
+When `translateHTML` is enabled (default is `true`), eligible rich-text containers with inline tags are translated as HTML in one request. The client sends `format: "html"` for those chunks and keeps plain text for other content such as standalone text nodes and form attributes. Pass `translateHTML: false` to `createPageTranslator` or set `element.translateHTML = false` on `<page-translator>` when you need the previous text-fragment behavior only.
 
 ## Testing
 

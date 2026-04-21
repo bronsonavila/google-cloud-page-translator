@@ -24,6 +24,32 @@ describe('createPageTranslator HTML translation (browser)', () => {
     })
   }
 
+  it('defaults translateHTML to true and sends rich text blocks as HTML', async () => {
+    const root = document.createElement('div')
+    const received = []
+    const transport = createTransport(received)
+
+    root.innerHTML = '<p data-rich>Try <strong>Tagalog</strong> next</p>'
+
+    const translator = createPageTranslator({
+      root,
+      transport,
+      storage: null,
+      observeMutations: false,
+      languages,
+      sourceLanguage: 'en'
+    })
+
+    await translator.setLanguage('es')
+
+    const htmlCalls = received.filter(call => call.format === 'html')
+
+    expect(htmlCalls.length).toBe(1)
+    expect(htmlCalls[0].texts).toEqual(['Try <strong>Tagalog</strong> next'])
+
+    translator.destroy()
+  })
+
   it('sends rich text blocks as HTML and leaves plain strings on the text path', async () => {
     const root = document.createElement('div')
     const received = []

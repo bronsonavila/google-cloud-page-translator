@@ -348,7 +348,7 @@ function getValueElements(root, shouldTranslateAttribute) {
  * @param {number} [options.observerDebounceMs] Debounce for mutation-driven re-translation (default: 300).
  * @param {string} [options.sourceLanguage] Language code for the original page content (default: `en`); selecting this restores originals.
  * @param {boolean} [options.markTranslations] When true (default), apply Google machine-translation `lang` markup to the translation root.
- * @param {boolean} [options.translateHTML] When true, translate eligible rich-text containers as HTML instead of splitting their text nodes.
+ * @param {boolean} [options.translateHTML] When true (default), translate eligible rich-text containers as HTML instead of splitting their text nodes.
  * @param {number} [options.cacheVersion] Bump to invalidate cached maps for all languages (default: 1).
  * @param {number} [options.cacheExpirationMs] Time-to-live for cached maps (default: 30 days).
  * @returns {{
@@ -374,7 +374,7 @@ export function createPageTranslator(options) {
     // Language code for the untranslated page content. Switching back to this restores originals.
     sourceLanguage = 'en',
     markTranslations = true,
-    translateHTML = false,
+    translateHTML = true,
     // Bump cacheVersion to immediately invalidate all cached translations for all users.
     cacheVersion = 1,
     cacheExpirationMs = 30 * 24 * 60 * 60 * 1000

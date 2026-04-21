@@ -27,7 +27,7 @@ export interface CreatePageTranslatorOptions {
   sourceLanguage?: string
   /** Apply Google machine-translation lang markup to the translation root. */
   markTranslations?: boolean
-  /** Translate eligible rich-text containers as HTML instead of plain text fragments. */
+  /** Translate eligible rich-text containers as HTML instead of plain text fragments (default: true). */
   translateHTML?: boolean
   /** Bump to invalidate all cached translations for all users. */
   cacheVersion?: number

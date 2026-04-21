@@ -36,7 +36,7 @@ function parseLanguages(value) {
 /**
  * Drop-in `<page-translator>` UI: shadow DOM language selector wired to {@link createPageTranslator}.
  *
- * Attributes: `endpoint` (POST URL), `languages` (JSON array of `{ value, label }`), optional `label`, optional `source-language`, optional `translate-html`.
+ * Attributes: `endpoint` (POST URL), `languages` (JSON array of `{ value, label }`), optional `label`, optional `source-language`, optional `translate-html` (mirrors `translateHTML`, default rich-text as HTML).
  * Properties: `endpoint`, `languages`, `root` (translation root, default `document.body`), `sourceLanguage`, `translateHTML`.
  */
 export class PageTranslatorElement extends HTMLElement {
@@ -50,7 +50,7 @@ export class PageTranslatorElement extends HTMLElement {
   #languages = null
   #label = DEFAULT_LABEL
   #sourceLanguage = null
-  #translateHTML = false
+  #translateHTML = true
   #selectChangeAbort = null
 
   constructor() {

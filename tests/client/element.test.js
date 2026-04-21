@@ -80,8 +80,8 @@ describe('PageTranslatorElement listener wiring (browser)', () => {
     }
   })
 
-  it('forwards html format when translateHTML is enabled', async () => {
-    const mockPath = '/__page_translator_html_test__'
+  it('defaults translateHTML to true and forwards html format for rich text', async () => {
+    const mockPath = '/__page_translator_html_default_test__'
     const mockEndpoint = `${window.location.origin}${mockPath}`
     const requestBodies = []
 
@@ -119,7 +119,6 @@ describe('PageTranslatorElement listener wiring (browser)', () => {
       element.endpoint = mockEndpoint
       element.languages = languages
       element.sourceLanguage = 'en'
-      element.translateHTML = true
       element.root = content
 
       const select = element.shadowRoot?.querySelector('select')
