@@ -10,7 +10,7 @@ This package ships:
 ## Install
 
 ```bash
-npm install github:bronsonavila/google-cloud-page-translator
+npm install https://github.com/bronsonavila/google-cloud-page-translator/tarball/master
 ```
 
 ## Client (drop-in Web Component)
