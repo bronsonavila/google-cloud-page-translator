@@ -1,0 +1,6 @@
+{
+  "main": "index.js",
+  "dependencies": {
+    "@google-cloud/translate": "9.3.0"
+  }
+}

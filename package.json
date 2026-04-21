@@ -1,0 +1,57 @@
+{
+  "name": "google-cloud-page-translator",
+  "version": "0.1.0",
+  "description": "Framework-agnostic page translation with a Cloud Run function backend and a Web Component UI.",
+  "type": "module",
+  "author": "Bronson Avila",
+  "keywords": [
+    "custom-element",
+    "dom",
+    "esm",
+    "google-cloud",
+    "google-translate",
+    "i18n",
+    "internationalization",
+    "translation",
+    "web-component"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": [
+    "./src/components/page-translator.js"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/core/client.d.ts",
+      "default": "./src/core/client.js"
+    },
+    "./element": {
+      "types": "./src/components/page-translator.d.ts",
+      "default": "./src/components/page-translator.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bronsonavila/google-cloud-page-translator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bronsonavila/google-cloud-page-translator/issues"
+  },
+  "homepage": "https://github.com/bronsonavila/google-cloud-page-translator#readme",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "lint": "biome check .",
+    "playground": "vite --config playground/vite.config.js --mode test",
+    "playwright:install": "playwright install chromium",
+    "test": "node --env-file-if-exists=.env.test node_modules/vitest/vitest.mjs run"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "2.4.12",
+    "@vitest/browser-playwright": "4.1.4",
+    "playwright": "1.59.1",
+    "vite": "8.0.8",
+    "vitest": "4.1.4"
+  }
+}

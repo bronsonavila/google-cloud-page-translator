@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Page translator playground</title>
+
+  <style>
+    :root {
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+      color: #111;
+      background: #f6f6f4;
+    }
+
+    body {
+      margin: 0;
+      padding: 1.5rem;
+      max-width: 52rem;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #ccc;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    page-translator {
+      --pt-label-color: #222;
+      --pt-select-color: #222;
+      --pt-select-border: 1px solid #888;
+    }
+
+    main {
+      background: #fff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+    }
+
+    main h2 {
+      margin-top: 1.75rem;
+      font-size: 1.1rem;
+    }
+
+    main h2:first-of-type {
+      margin-top: 0;
+    }
+
+    .log-wrap {
+      margin-top: 2rem;
+    }
+
+    .log-wrap h2 {
+      font-size: 0.95rem;
+      margin: 0 0 0.5rem;
+    }
+
+    pre[data-log] {
+      margin: 0;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border-radius: 6px;
+      max-height: 14rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .hint {
+      margin: 0 0 1rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      background: #fff3cd;
+      border: 1px solid #e6d89c;
+      border-radius: 6px;
+    }
+
+    .hint[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <p id="endpoint-hint" class="hint" hidden>
+    Set <code>VITE_TRANSLATE_ENDPOINT</code> in <code>.env.test</code> at the repo root, add
+    <code>http://localhost:5173</code> to Cloud Run <code>ALLOWED_ORIGINS</code>, then run
+    <code>pnpm playground</code>. See README for details.
+  </p>
+
+  <header>
+    <h1>Page translator playground</h1>
+
+    <page-translator id="translator"></page-translator>
+  </header>
+
+  <main id="page-root">
+    <h2>Welcome</h2>
+
+    <p>
+      This page is only for local manual checks. Use the language control above to translate the
+      blocks inside this panel. The rest of the page (for example this sentence in the shell) is
+      outside the translation root on purpose so you can see what stays fixed when you change
+      <code>root</code> in code.
+    </p>
+
+    <h2>Sample article</h2>
+
+    <p>
+      Good morning. Today we are exercising the translation pipeline with several paragraphs and a
+      short list so batches and caching are easy to spot in the network log.
+    </p>
+
+    <p>
+      The playground uses the same environment file as the browser tests. Point it at your deployed
+      Cloud Run function URL and confirm your origin is allowlisted.
+    </p>
+
+    <h2>Checklist</h2>
+
+    <ul>
+      <li>Select Spanish and watch this list and the paragraphs update.</li>
+      <li>Switch back to English and confirm text returns without a long delay (warm cache).</li>
+      <li>Open the browser developer tools Network tab alongside the log panel below.</li>
+    </ul>
+
+    <h2>Closing note</h2>
+
+    <p>Thank you for trying the component in a real browser tab.</p>
+  </main>
+
+  <section class="log-wrap" aria-label="Fetch log">
+    <h2>Playground fetch log</h2>
+
+    <pre data-log="" aria-live="polite"></pre>
+  </section>
+
+  <script type="module" src="./main.js"></script>
+</body>
+
+</html>

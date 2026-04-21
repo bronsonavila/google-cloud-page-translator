@@ -1,0 +1,9 @@
+.DS_Store
+.env
+.env.test
+.pnpm-store/
+.vitest-attachments/
+*.tgz
+coverage/
+node_modules/
+tests/**/__screenshots__/
