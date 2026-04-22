@@ -52,6 +52,7 @@ export class PageTranslatorElement extends HTMLElement {
   #sourceLanguage = null
   #translateHTML = true
   #selectChangeAbort = null
+  #restartPending = false
 
   constructor() {
     super()
@@ -71,7 +72,16 @@ export class PageTranslatorElement extends HTMLElement {
     this.#translateHTML = this.#translateHTML || this.hasAttribute('translate-html')
 
     this.#render()
-    this.#ensureTranslator()
+
+    if (!this.#restartPending) {
+      this.#restartPending = true
+
+      queueMicrotask(() => {
+        this.#restartPending = false
+
+        if (this.isConnected) this.#ensureTranslator()
+      })
+    }
   }
 
   disconnectedCallback() {
@@ -179,8 +189,17 @@ export class PageTranslatorElement extends HTMLElement {
     this.#translator?.destroy()
     this.#translator = null
 
-    // Rebuild only when attached so property updates are safe before connection.
-    if (this.isConnected) this.#ensureTranslator()
+    if (!this.isConnected) return
+
+    if (!this.#restartPending) {
+      this.#restartPending = true
+
+      queueMicrotask(() => {
+        this.#restartPending = false
+
+        if (this.isConnected) this.#ensureTranslator()
+      })
+    }
   }
 
   #setAttributionVisible(visible) {

@@ -408,6 +408,11 @@ export function createPageTranslator(options) {
   // Monotonic request id guards against stale async responses overwriting newer language choices.
   let applyRequestId = 0
   let observer = null
+  // Defer the first auto-apply of a saved non-source language until the root DOM is quiet,
+  // so post-load mutations do not re-snapshot translated text as originals.
+  let startupLanguage = null
+  let startupApplyTimer = null
+  let startupSettled = true
 
   function getStoredLanguage() {
     if (!storage) return null
@@ -683,6 +688,42 @@ export function createPageTranslator(options) {
     applyTranslationMarkup(targetLanguage)
   }
 
+  function cancelStartupSavedLanguageApply() {
+    if (startupApplyTimer !== null) {
+      clearTimeout(startupApplyTimer)
+
+      startupApplyTimer = null
+    }
+
+    startupLanguage = null
+    startupSettled = true
+  }
+
+  function scheduleStartupSavedLanguageApply() {
+    if (!startupLanguage || startupSettled) return
+
+    if (startupApplyTimer !== null) {
+      clearTimeout(startupApplyTimer)
+
+      startupApplyTimer = null
+    }
+
+    startupApplyTimer = setTimeout(() => {
+      startupApplyTimer = null
+
+      if (startupSettled || !startupLanguage) return
+
+      const lang = startupLanguage
+
+      startupLanguage = null
+      startupSettled = true
+
+      applyLanguage(lang).catch(error => {
+        console.error('Translation failed:', error)
+      })
+    }, observerDebounceMs)
+  }
+
   async function setLanguage(language) {
     if (typeof language !== 'string' || !language) return
 
@@ -691,6 +732,8 @@ export function createPageTranslator(options) {
 
       if (!known.has(language)) return
     }
+
+    cancelStartupSavedLanguageApply()
 
     currentLanguage = language
 
@@ -708,6 +751,8 @@ export function createPageTranslator(options) {
   }
 
   function restoreOriginals() {
+    cancelStartupSavedLanguageApply()
+
     currentLanguage = sourceLanguage
 
     setStoredLanguage(sourceLanguage)
@@ -717,6 +762,8 @@ export function createPageTranslator(options) {
   }
 
   function destroy() {
+    cancelStartupSavedLanguageApply()
+
     if (observer) observer.disconnect()
 
     observer = null
@@ -733,6 +780,12 @@ export function createPageTranslator(options) {
   if (observeMutations && typeof MutationObserver !== 'undefined') {
     observer = new MutationObserver(() => {
       if (Date.now() < ignoreMutationsUntil) return
+
+      if (!startupSettled && startupLanguage) {
+        scheduleStartupSavedLanguageApply()
+
+        return
+      }
 
       if (currentLanguage === sourceLanguage) return
 
@@ -757,9 +810,10 @@ export function createPageTranslator(options) {
     currentLanguage = saved
 
     if (saved !== sourceLanguage) {
-      applyLanguage(saved).catch(error => {
-        console.error('Translation failed:', error)
-      })
+      startupLanguage = saved
+      startupSettled = false
+
+      scheduleStartupSavedLanguageApply()
     }
   }
 
