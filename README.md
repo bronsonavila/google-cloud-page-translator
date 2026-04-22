@@ -46,6 +46,8 @@ page-translator {
   --pt-label-size: 1rem;
   --pt-select-color: currentColor;
   --pt-select-border: 1px solid currentColor;
+  --pt-select-disabled-opacity: 0.5;
+  --pt-select-disabled-cursor: wait;
   --pt-attribution-color: inherit;
 }
 ```

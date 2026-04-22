@@ -259,10 +259,20 @@ export class PageTranslatorElement extends HTMLElement {
         async event => {
           const language = event.target.value
 
-          // Awaiting here keeps attribution visibility in sync with the applied language.
-          await this.#translator?.setLanguage(language)
+          try {
+            select.disabled = true
+            this.style.cursor = 'wait'
+            this.toggleAttribute('data-translating', true)
 
-          this.#setAttributionVisible(language !== this.sourceLanguage)
+            // Awaiting here keeps attribution visibility in sync with the applied language.
+            await this.#translator?.setLanguage(language)
+
+            this.#setAttributionVisible(language !== this.sourceLanguage)
+          } finally {
+            select.disabled = false
+            this.style.cursor = ''
+            this.toggleAttribute('data-translating', false)
+          }
         },
         { signal }
       )
@@ -303,6 +313,11 @@ export class PageTranslatorElement extends HTMLElement {
           background: var(--pt-select-bg, transparent);
           border-radius: var(--pt-select-radius, 4px);
           padding: var(--pt-select-padding, 0.15rem 0.25rem);
+        }
+
+        select:disabled {
+          opacity: var(--pt-select-disabled-opacity, 0.5);
+          cursor: var(--pt-select-disabled-cursor, wait);
         }
 
         a {
